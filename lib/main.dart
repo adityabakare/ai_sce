@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+//import 'dart:async';
 
+String url = 'http://192.168.0.170:5000';
 void main() {
   runApp(MyApp());
 }
@@ -23,20 +28,29 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? _fileName;
-  List<PlatformFile>? _paths;
+  // List<PlatformFile>? _paths;
+  //FilePickerResult result;
   String? _directoryPath;
-
-  bool _loadingPath = false;
+  String? _filePath;
+  late File file;
+  bool? _loadingPath = false;
+  var req = http.MultipartRequest('POST', Uri.parse(url));
 
   void _openFileExplorer() async {
     setState(() => _loadingPath = true);
     try {
       _directoryPath = null;
-      _paths = (await FilePicker.platform.pickFiles(
-              type: FileType.custom,
-              allowMultiple: false,
-              allowedExtensions: ['pdf']))
-          ?.files;
+      // result = (await FilePicker.platform.pickFiles(
+      //         type: FileType.custom,
+      //         allowMultiple: false,
+      //         allowedExtensions: ['pdf']))
+      //
+      //
+      //    ?.files;
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      if (result != null) {
+        //File file =File(result.files.single.path);
+      }
     } on PlatformException catch (e) {
       print("Unsupported operation" + e.toString());
     } catch (ex) {
@@ -45,24 +59,36 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!mounted) return;
     setState(() {
       _loadingPath = false;
-      print(_paths!.first.extension);
-      _fileName =
-          _paths != null ? _paths!.map((e) => e.name).toString() : '...';
+
+      // _fileName =
+      //     _paths != null ? _paths!.map((e) => e.name).toString() : '...';
+      // _filePath =
+      //     _paths != null ? _paths!.map((e) => e.path).toString() : '...';
+      // if (_filePath != null) {
+      //   // upload(_filePath.toString(), url);
+      // }
     });
   }
 
-  void _clearCachedFiles() {
-    FilePicker.platform.clearTemporaryFiles().then((result) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: result! ? Colors.green : Colors.red,
-          content: Text((result
-              ? 'Temporary files removed with success.'
-              : 'Failed to clean temporary files')),
-        ),
-      );
-    });
-  }
+  // Future<void> upload(String filename, String url) async {
+  //   var request = http.MultipartRequest('POST', Uri.parse(url));
+  //   request.files
+  //       .add(await http.MultipartFile.fromPath('file', _filePath.toString()));
+  //   var res = await request.send();
+  //   print(res);
+  // }
+  // void _clearCachedFiles() {
+  //   FilePicker.platform.clearTemporaryFiles().then((result) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         backgroundColor: result! ? Colors.green : Colors.red,
+  //         content: Text((result
+  //             ? 'Temporary files removed with success.'
+  //             : 'Failed to clean temporary files')),
+  //       ),
+  //     );
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
