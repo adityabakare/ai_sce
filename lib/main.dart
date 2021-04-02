@@ -1,12 +1,11 @@
+// import 'dart:html';
 import 'dart:io';
-
+import 'package:http_parser/http_parser.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-//import 'dart:async';
 
-String url = 'http://192.168.0.170:5000';
 void main() {
   runApp(MyApp());
 }
@@ -28,28 +27,62 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? _fileName;
-  // List<PlatformFile>? _paths;
-  //FilePickerResult result;
-  String? _directoryPath;
   String? _filePath;
+  late PlatformFile file2;
   late File file;
-  bool? _loadingPath = false;
-  var req = http.MultipartRequest('POST', Uri.parse(url));
+  List<PlatformFile>? _paths;
+  String? _directoryPath;
+
+  bool _loadingPath = false;
+
+  Future<int> upload(File file, String fileName) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse("http://18.222.192.28:5000"),
+      );
+      Map<String, String> headers = {"Content-type": "multipart/form-data"};
+      request.files.add(
+        http.MultipartFile(
+          "file",
+          file.readAsBytes().asStream(),
+          file.lengthSync(),
+          filename: fileName,
+          contentType: MediaType('file', 'pdf'),
+        ),
+      );
+      request.headers.addAll(headers);
+      var res = await request.send();
+      print("response" + res.toString());
+      var out = await http.Response.fromStream(res);
+      print('out.body ' + out.body.toString());
+      print(out);
+      // print("This is response:" + res.toString());
+      return res.statusCode;
+    } catch (E) {
+      throw (E);
+    }
+  }
 
   void _openFileExplorer() async {
     setState(() => _loadingPath = true);
     try {
       _directoryPath = null;
-      // result = (await FilePicker.platform.pickFiles(
+      // _paths = (await FilePicker.platform.pickFiles(
       //         type: FileType.custom,
       //         allowMultiple: false,
       //         allowedExtensions: ['pdf']))
-      //
-      //
-      //    ?.files;
+      //     ?.files;
       FilePickerResult? result = await FilePicker.platform.pickFiles();
       if (result != null) {
-        //File file =File(result.files.single.path);
+        file = File(result.files.single.path.toString());
+        file2 = result.files.first;
+        _fileName = file2.name;
+        _filePath = file2.path;
+        print(
+            "filepath and name" + _filePath.toString() + _fileName.toString());
+        var c = await upload(file, _fileName.toString());
+        print('printing output' + c.toString());
       }
     } on PlatformException catch (e) {
       print("Unsupported operation" + e.toString());
@@ -59,36 +92,28 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!mounted) return;
     setState(() {
       _loadingPath = false;
+      file = file;
+      _fileName = file2.name;
+      _filePath = file2.path;
+      // print(_paths!.first.extension);
 
       // _fileName =
       //     _paths != null ? _paths!.map((e) => e.name).toString() : '...';
-      // _filePath =
-      //     _paths != null ? _paths!.map((e) => e.path).toString() : '...';
-      // if (_filePath != null) {
-      //   // upload(_filePath.toString(), url);
-      // }
     });
   }
 
-  // Future<void> upload(String filename, String url) async {
-  //   var request = http.MultipartRequest('POST', Uri.parse(url));
-  //   request.files
-  //       .add(await http.MultipartFile.fromPath('file', _filePath.toString()));
-  //   var res = await request.send();
-  //   print(res);
-  // }
-  // void _clearCachedFiles() {
-  //   FilePicker.platform.clearTemporaryFiles().then((result) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         backgroundColor: result! ? Colors.green : Colors.red,
-  //         content: Text((result
-  //             ? 'Temporary files removed with success.'
-  //             : 'Failed to clean temporary files')),
-  //       ),
-  //     );
-  //   });
-  // }
+  void _clearCachedFiles() {
+    FilePicker.platform.clearTemporaryFiles().then((result) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: result! ? Colors.green : Colors.red,
+          content: Text((result
+              ? 'Temporary files removed with success.'
+              : 'Failed to clean temporary files')),
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
